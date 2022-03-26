@@ -1,16 +1,10 @@
-from multiprocessing.connection import Client
-from flask import Flask
-from threading import Thread
-from itertools import cycle
-
+#region Imports
 import discord
 import nltk, os
 #nltk.download('punkt')
 import pandas as pd
 
-
 from nltk import word_tokenize,sent_tokenize
-
 from nltk.stem.lancaster import LancasterStemmer
 stemmer = LancasterStemmer()
 
@@ -20,22 +14,9 @@ import tensorflow as tf
 import random
 import json
 import pickle
+#endregion
 
-app = Flask('')
-
-@app.route('/')
-def main():
-  return "Your Bot Is Ready"
-
-def run():
-  app.run(host="0.0.0.0", port=8000)
-
-def keep_alive():
-  server = Thread(target=run)
-  server.start()
-
-status = cycle(['with Python','JetHub'])
-
+#region DeepL Greetings
 with open("intents.json") as file:
     data = json.load(file)
 
@@ -90,8 +71,6 @@ except:
     with open("data.pickle","wb") as f:
         pickle.dump((words, labels, training, output), f)
 
-
-
 net = tflearn.input_data(shape=[None, len(training[0])])
 net = tflearn.fully_connected(net, 8)
 net = tflearn.fully_connected(net, 8)
@@ -118,30 +97,42 @@ def bag_of_words(s, words):
                 bag[i] = 1
     
     return np.array(bag)
+#endregion
 
+#region pick a movie title in movies
+movies = pd.read_json('movies.json', encoding='UTF-8')
 
+columns = ["Poster_Link","Series_Title","Released_Year","Certificate","Runtime",
+           "Genre","IMDB_Rating","Overview","Meta_score","Director",
+           "Star1","Star2","Star3","Star4","No_of_Votes","Gross"]
+
+def titre(msg):
+    if msg == 'can you tell me about LOR ?':
+        return movies['de ce titre']
+    else:
+        return 'pas trouvé'
+
+#endregion
+
+#region Client
 class MyClient(discord.Client):
     async def on_ready(self):
         print('Bot ready !')
         print(self.user.name)
         print(self.user.id)
         print('------')
-    
-    async def change_status():
-        await Client.change_presence(activity=discord.Game(next(status)))
 
     async def on_message(self, message):
         # we do not want the bot to reply to itself
         if message.author.id == self.user.id:
             return
 
-        elif message.content == "Show me Gandhalf !":
-            movies = pd.read_json('movies.json', encoding='UTF-8')
-            #print(movies['Series_Title'][2])
-            
+        if titre(message.content) != "pas trouvé":
             for i in range(len(movies)):
-                if movies['Series_Title'][i] == "The Lord of the Rings: The Fellowship of the Ring":
-                    await message.channel.send(movies[i].format(message))
+                if movies['Series_Title'][i] == titre(message.content):
+                    answer = [(elem + ' : ' + str(movies[elem][i])) for elem in columns]
+                    for ans in answer :
+                        await message.channel.send((ans + "\n").format(message))
         
         else:
            inp = message.content
@@ -158,7 +149,7 @@ class MyClient(discord.Client):
                await message.channel.send(bot_response.format(message))
            else:
                await message.channel.send("I didnt get that. Can you explain or try again.".format(message))
-
+#endregion
 
 client = MyClient()
-client.run("OTU0MDAxMjg1MDA5NTM5MTUz.YjMw7g.bi4jLfPWp1AqJYw9UBg6upp2bIk")
+client.run("OTU0MDAxMjg1MDA5NTM5MTUz.YjMw7g.xF8Q4OGoYpFOsqCnGJznZ_jQq5U")
