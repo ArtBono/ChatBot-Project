@@ -7,4 +7,3 @@ If you write a movie title, Léon will give you all the importants informations 
 We added several options : for instance if you write a genre on the chat (ex : action) Léon will find you a movie belonging to this genre.
 
 We choosed to code Léon in python, and we uses JSON datafile format about movies, find on the internet.
-Écrire à Arthur Bertrand
