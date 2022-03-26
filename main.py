@@ -16,6 +16,8 @@ import json
 import pickle
 
 import re
+from dotenv import load_dotenv
+import os
 #endregion
 
 #region DeepL Greetings
@@ -176,4 +178,5 @@ class MyClient(discord.Client):
 #endregion
 
 client = MyClient()
-client.run("OTU0MDAxMjg1MDA5NTM5MTUz.YjMw7g.GcNBwsc82qtpq3Xjb9ezyNfYux4")
+load_dotenv(dotenv_path="config")
+client.run(os.getenv("TOKEN"))
