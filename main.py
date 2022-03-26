@@ -14,6 +14,8 @@ import tensorflow as tf
 import random
 import json
 import pickle
+
+import re
 #endregion
 
 #region DeepL Greetings
@@ -99,19 +101,33 @@ def bag_of_words(s, words):
     return np.array(bag)
 #endregion
 
-#region pick a movie title in movies
+#region researches in movies db
 movies = pd.read_json('movies.json', encoding='UTF-8')
 
 columns = ["Poster_Link","Series_Title","Released_Year","Certificate","Runtime",
            "Genre","IMDB_Rating","Overview","Meta_score","Director",
            "Star1","Star2","Star3","Star4","No_of_Votes","Gross"]
 
+# find if a title is contained in movies db
 def titre(msg):
-    if msg == 'can you tell me about LOR ?':
-        return movies['de ce titre']
+    for mov in range(len(movies)):
+        if re.search(movies['Series_Title'][mov].lower(),msg.lower()) != None:
+            return movies['Series_Title'][mov]
     else:
-        return 'pas trouvé'
+        return 'not found'
 
+# find a random title movie in a given genre
+def genre(msg):
+    listmovies = []
+    for mov in range(len(movies)):
+        listgenre = movies['Genre'][mov].split(', ')
+        for g in listgenre:
+            if re.search(g.lower(),msg.lower()) != None:
+                listmovies.append([movies['Series_Title'][mov], movies['Poster_Link'][mov]])
+    if listmovies != []:
+        return listmovies[random.randint(0,len(listmovies))]
+    else:
+        return 'not found'
 #endregion
 
 #region Client
@@ -127,14 +143,22 @@ class MyClient(discord.Client):
         if message.author.id == self.user.id:
             return
 
-        if titre(message.content) != "pas trouvé":
+        # display intels about the queried movie
+        elif titre(message.content) != "not found":
             for i in range(len(movies)):
                 if movies['Series_Title'][i] == titre(message.content):
                     answer = [(elem + ' : ' + str(movies[elem][i])) for elem in columns]
                     for ans in answer :
                         await message.channel.send((ans + "\n").format(message))
+            await message.channel.send('If you want to discover a movie in a particular category, just tell me this one.'.format(message))
         
-        else:
+        # display a title about an queried genre
+        elif genre(message.content) != "not found":
+            for el in genre(message.content):
+                await message.channel.send(str(el).format(message))
+            await message.channel.send('If you want to know about this movie or another in particular, just tell me the title.'.format(message))
+
+        else:   
            inp = message.content
            result = model.predict([bag_of_words(inp, words)])[0]
            result_index = np.argmax(result)
@@ -148,8 +172,8 @@ class MyClient(discord.Client):
                bot_response=random.choice(responses)
                await message.channel.send(bot_response.format(message))
            else:
-               await message.channel.send("I didnt get that. Can you explain or try again.".format(message))
+               await message.channel.send("I didnt get that. Give me another movie title or try again.".format(message))
 #endregion
 
 client = MyClient()
-client.run("OTU0MDAxMjg1MDA5NTM5MTUz.YjMw7g.xF8Q4OGoYpFOsqCnGJznZ_jQq5U")
+client.run("OTU0MDAxMjg1MDA5NTM5MTUz.YjMw7g.GcNBwsc82qtpq3Xjb9ezyNfYux4")
